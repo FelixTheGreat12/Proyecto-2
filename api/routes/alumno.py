@@ -9,6 +9,8 @@ from core.security import decode_access_token
 from core.mongo import get_db
 from models.alumno import AlumnoModel, Alumno, AlumnoCollection, UpdateAlumno
 from fastapi.security import OAuth2PasswordBearer
+import datetime
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://127.0.0.1:8000/api/v1/token")
@@ -100,3 +102,33 @@ async def delete_alumno(id: str, db: AsyncIOMotorClient = Depends(get_db)):
     if delete_result.deleted_count == 1:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     raise HTTPException(status_code=404, detail=f"Alumno {id} no encontrado")
+
+@router.post(
+    "/alumnos/{id_alumno}/inscribir",
+    response_description="Inscribir alumno a una materia",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(get_current_alumno)]  # Requiere autenticación
+)
+async def inscribir_alumno_a_materia(
+    id_alumno: str,
+    id_materia: str = Body(..., embed=True),
+    db: AsyncIOMotorClient = Depends(get_db)
+):
+    # Verifica que el alumno exista
+    if not await db.alumnos.find_one({"_id": ObjectId(id_alumno)}):
+        raise HTTPException(status_code=404, detail="Alumno no encontrado")
+
+    # Verifica que la materia exista
+    if not await db.materias.find_one({"_id": ObjectId(id_materia)}):
+        raise HTTPException(status_code=404, detail="Materia no encontrada")
+
+    # Crea la inscripción
+    nueva_inscripcion = {
+        "id_alumno": ObjectId(id_alumno),
+        "id_materia": ObjectId(id_materia),
+        "fecha_inscripcion": datetime.datetime.utcnow(),
+    }
+    result = await db.inscripciones.insert_one(nueva_inscripcion)
+
+    return {"id": str(result.inserted_id), **nueva_inscripcion}
+

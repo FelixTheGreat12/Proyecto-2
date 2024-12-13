@@ -4,6 +4,9 @@ from core.mongo import connect_db, close_db, get_db
 from api.routes.auth import router as auth_router
 from api.routes.profesor import router as profesor_router
 from api.routes.alumno import router as alumno_router  # Importamos el router de alumnos
+from api.routes.materia import router as materia_router
+from api.routes.calificacion import router as calificacion_router  # Importar el router de calificaciones
+
 
 
 app = FastAPI()
@@ -21,4 +24,5 @@ async def shutdown_event():
 app.include_router(auth_router, prefix=custom_prefix, tags=["auth"])
 app.include_router(profesor_router, prefix=custom_prefix, tags=["profesores"])
 app.include_router(alumno_router, prefix=custom_prefix, tags=["alumnos"])  # Agregamos el router de alumnos
-
+app.include_router(materia_router, prefix=custom_prefix, tags=["materias"])
+app.include_router(calificacion_router, prefix=custom_prefix, tags=["calificaciones"]) # Agregar el router de calificaciones
